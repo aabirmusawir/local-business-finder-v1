@@ -299,35 +299,35 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10 text-slate-950 sm:px-10">
-      <section className="mx-auto flex w-full max-w-5xl flex-col gap-8">
-        <div className="max-w-2xl">
-          <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-teal-700">
+    <main className="min-h-screen bg-white px-4 py-8 text-black sm:px-6 lg:px-8">
+      <section className="mx-auto flex w-full max-w-6xl flex-col gap-8">
+        <header className="w-full border-b border-neutral-200 pb-8">
+          <p className="mb-3 text-sm font-bold uppercase tracking-[0.18em] text-neutral-500">
             Local Business Finder
           </p>
-          <h1 className="text-4xl font-bold leading-tight sm:text-5xl">
+          <h1 className="max-w-3xl text-4xl font-black leading-tight text-black sm:text-5xl">
             Find nearby places from one simple search.
           </h1>
-          <p className="mt-4 text-lg leading-7 text-slate-500">
-            Enter an address, choose a category, and search Yelp, Google
-            Places, and map data for businesses within about 20 miles.
+          <p className="mt-4 max-w-2xl text-base leading-7 text-neutral-600 sm:text-lg">
+            Enter any address, choose a category, and search for publicly
+            available data for businesses within a 20 mile radius
           </p>
-        </div>
+        </header>
 
         <form
-          className="grid gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:grid-cols-[1fr_220px_auto]"
+          className="grid gap-4 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:grid-cols-[minmax(0,1fr)_220px_auto] sm:p-5"
           onSubmit={handleSearch}
         >
           <div className="relative flex flex-col gap-1.5">
             <label
-              className="text-sm font-medium text-slate-700"
+              className="text-sm font-bold text-black"
               htmlFor="address"
             >
               Address
             </label>
             <input
               autoComplete="off"
-              className="h-11 rounded-lg border border-slate-300 px-4 text-sm outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-100"
+              className="h-11 rounded-xl border border-neutral-300 bg-white px-4 text-sm text-black outline-none transition placeholder:text-neutral-400 focus:border-black focus:ring-4 focus:ring-neutral-200"
               id="address"
               name="address"
               onBlur={() => {
@@ -345,15 +345,15 @@ export default function Home() {
               value={address}
             />
             {showAddressSuggestions ? (
-              <div className="absolute left-0 right-0 top-full z-20 mt-1.5 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
+              <div className="absolute left-0 right-0 top-full z-20 mt-1.5 overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-lg">
                 {isLoadingSuggestions ? (
-                  <p className="px-4 py-3 text-sm text-slate-400">
+                  <p className="px-4 py-3 text-sm text-neutral-500">
                     Looking up addresses…
                   </p>
                 ) : null}
 
                 {!isLoadingSuggestions && addressSuggestions.length === 0 ? (
-                  <p className="px-4 py-3 text-sm text-slate-400">
+                  <p className="px-4 py-3 text-sm text-neutral-500">
                     No address suggestions found.
                   </p>
                 ) : null}
@@ -361,7 +361,7 @@ export default function Home() {
                 {!isLoadingSuggestions &&
                   addressSuggestions.map((suggestion) => (
                     <button
-                      className="block w-full px-4 py-2.5 text-left text-sm text-slate-700 transition hover:bg-teal-50 hover:text-teal-900"
+                      className="block w-full px-4 py-2.5 text-left text-sm text-neutral-700 transition hover:bg-neutral-100 hover:text-black"
                       key={suggestion.id}
                       onMouseDown={(event) => event.preventDefault()}
                       onClick={() => chooseAddressSuggestion(suggestion)}
@@ -375,9 +375,9 @@ export default function Home() {
           </div>
 
           <label className="flex flex-col gap-1.5">
-            <span className="text-sm font-medium text-slate-700">Category</span>
+            <span className="text-sm font-bold text-black">Category</span>
             <select
-              className="h-11 rounded-lg border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-100"
+              className="h-11 rounded-xl border border-neutral-300 bg-white px-4 text-sm text-black outline-none transition focus:border-black focus:ring-4 focus:ring-neutral-200"
               name="category"
               onChange={(event) => {
                 setCategory(event.target.value);
@@ -398,7 +398,7 @@ export default function Home() {
           </label>
 
           <button
-            className="h-11 w-full self-end rounded-lg bg-teal-700 px-6 text-sm font-semibold text-white transition hover:bg-teal-800 focus:outline-none focus:ring-4 focus:ring-teal-200 disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto"
+            className="h-11 w-full self-end rounded-xl bg-black px-6 text-sm font-bold text-white transition hover:bg-neutral-800 focus:outline-none focus:ring-4 focus:ring-neutral-300 disabled:cursor-not-allowed disabled:bg-neutral-300 sm:w-auto"
             disabled={isLoading}
             type="submit"
           >
@@ -406,13 +406,13 @@ export default function Home() {
           </button>
         </form>
 
-        <section aria-label="Recent searches" className="space-y-3">
+        <section aria-label="Recent searches" className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+            <h2 className="text-lg font-bold text-black">
               Recent searches
             </h2>
             <button
-              className="text-sm text-slate-400 transition hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-xl border border-neutral-300 bg-white px-3 py-1.5 text-sm font-bold text-black transition hover:border-black hover:bg-neutral-50 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-400"
               disabled={recentSearches.length === 0}
               onClick={clearRecentSearches}
               type="button"
@@ -422,30 +422,30 @@ export default function Home() {
           </div>
 
           {recentSearches.length > 0 ? (
-            <div className="grid gap-2.5 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               {recentSearches.map((recentSearch) => {
                 const isLoaded = loadedRecentSearchId === recentSearch.id;
 
                 return (
                   <button
-                    className={`rounded-xl border bg-white p-4 text-left shadow-sm transition hover:border-teal-400 hover:shadow-md ${
+                    className={`rounded-2xl border bg-white p-4 text-left shadow-sm transition hover:border-neutral-400 hover:shadow-md ${
                       isLoaded
-                        ? "border-teal-500 ring-4 ring-teal-100"
-                        : "border-slate-200"
+                        ? "border-black ring-4 ring-neutral-200"
+                        : "border-neutral-200"
                     }`}
                     key={recentSearch.id}
                     onClick={() => loadRecentSearch(recentSearch)}
                     type="button"
                   >
-                    <span className="block truncate text-sm font-semibold text-slate-800">
+                    <span className="block truncate text-sm font-bold text-black">
                       {recentSearch.address}
                     </span>
                     <span className="mt-2 block">
-                      <span className="inline-block rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-medium text-teal-700">
+                      <span className="inline-block rounded-full border border-neutral-200 bg-neutral-100 px-2.5 py-0.5 text-xs font-semibold text-neutral-700">
                         {getCategoryLabel(recentSearch.category)}
                       </span>
                     </span>
-                    <span className="mt-2 block text-xs text-slate-400">
+                    <span className="mt-2 block text-xs text-neutral-500">
                       {formatSavedSearchDate(recentSearch.createdAt)}
                     </span>
                   </button>
@@ -453,22 +453,22 @@ export default function Home() {
               })}
             </div>
           ) : (
-            <div className="rounded-xl border border-dashed border-slate-200 bg-white p-5 text-center text-sm text-slate-400">
+            <div className="rounded-2xl border border-dashed border-neutral-200 bg-white p-5 text-center text-sm text-neutral-500">
               No recent searches yet.
             </div>
           )}
         </section>
 
-        <section aria-label="Search results" className="space-y-3">
+        <section aria-label="Search results" className="space-y-4">
           {sourceWarnings.length > 0 ? (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-              <p className="flex items-center gap-1.5 text-sm font-semibold text-amber-900">
+            <div className="rounded-2xl border border-neutral-300 bg-neutral-50 p-4">
+              <p className="flex items-center gap-1.5 text-sm font-bold text-black">
                 <span aria-hidden="true">⚠</span>
                 Partial results
               </p>
               <ul className="mt-1.5 space-y-0.5">
                 {sourceWarnings.map((warning) => (
-                  <li className="text-sm text-amber-800" key={warning}>
+                  <li className="text-sm text-neutral-700" key={warning}>
                     {warning}
                   </li>
                 ))}
@@ -477,55 +477,63 @@ export default function Home() {
           ) : null}
 
           {dedupedBusinesses.length > 0 ? (
-            <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-col gap-5 rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm sm:flex-row sm:items-start sm:justify-between sm:p-5">
               <div className="flex flex-col gap-3">
                 <div className="flex flex-wrap gap-2">
-                  <div className="flex flex-col items-center rounded-lg bg-slate-50 px-4 py-2">
-                    <span className="text-2xl font-bold leading-none text-slate-950">
+                  <div className="flex flex-col items-center rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5">
+                    <span className="text-2xl font-black leading-none text-black">
                       {visibleBusinesses.length}
                     </span>
-                    <span className="mt-1 text-xs text-slate-500">results</span>
+                    <span className="mt-1 text-xs font-medium text-neutral-500">
+                      results
+                    </span>
                   </div>
-                  <div className="flex flex-col items-center rounded-lg bg-slate-50 px-4 py-2">
-                    <span className="text-2xl font-bold leading-none text-slate-950">
+                  <div className="flex flex-col items-center rounded-xl border border-neutral-200 bg-neutral-50 px-4 py-2.5">
+                    <span className="text-2xl font-black leading-none text-black">
                       {duplicatesRemovedCount}
                     </span>
-                    <span className="mt-1 text-xs text-slate-500">duplicates removed</span>
+                    <span className="mt-1 text-xs font-medium text-neutral-500">
+                      duplicates removed
+                    </span>
                   </div>
                   {likelyChainsFoundCount > 0 ? (
-                    <div className="flex flex-col items-center rounded-lg bg-amber-50 px-4 py-2">
-                      <span className="text-2xl font-bold leading-none text-amber-700">
+                    <div className="flex flex-col items-center rounded-xl border border-neutral-300 bg-white px-4 py-2.5">
+                      <span className="text-2xl font-black leading-none text-black">
                         {likelyChainsFoundCount}
                       </span>
-                      <span className="mt-1 text-xs text-amber-600">likely chains</span>
+                      <span className="mt-1 text-xs font-medium text-neutral-600">
+                        likely chains
+                      </span>
                     </div>
                   ) : null}
                 </div>
                 <div className="flex flex-wrap items-center gap-1.5">
-                  <span className="text-xs text-slate-400">{rawResultsCount} raw ·</span>
+                  <span className="text-xs font-medium text-neutral-500">
+                    {rawResultsCount} raw ·
+                  </span>
                   {yelpResultsCount > 0 ? (
-                    <span className="rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-medium text-rose-700">
+                    <span className="rounded-full border border-neutral-200 bg-neutral-100 px-2.5 py-0.5 text-xs font-semibold text-neutral-700">
                       Yelp · {yelpResultsCount}
                     </span>
                   ) : null}
                   {googlePlacesResultsCount > 0 ? (
-                    <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                    <span className="rounded-full border border-neutral-200 bg-neutral-100 px-2.5 py-0.5 text-xs font-semibold text-neutral-700">
                       Google · {googlePlacesResultsCount}
                     </span>
                   ) : null}
                   {openStreetMapResultsCount > 0 ? (
-                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                    <span className="rounded-full border border-neutral-200 bg-neutral-100 px-2.5 py-0.5 text-xs font-semibold text-neutral-700">
                       OSM · {openStreetMapResultsCount}
                     </span>
                   ) : null}
                 </div>
               </div>
 
-              <div className="flex flex-row items-center gap-4 sm:flex-col sm:items-end">
-                <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
+              <div className="flex flex-col items-start gap-3 sm:items-end">
+                <label className="flex cursor-pointer items-center gap-2 text-sm font-semibold text-black">
                   <input
                     checked={hideLikelyChains}
-                    className="h-4 w-4 accent-teal-700"
+                    className="h-4 w-4 accent-black"
                     onChange={(event) =>
                       setHideLikelyChains(event.target.checked)
                     }
@@ -534,7 +542,7 @@ export default function Home() {
                   Hide likely chains
                 </label>
                 <button
-                  className="rounded-lg border border-teal-700 px-4 py-1.5 text-sm font-semibold text-teal-700 transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400 disabled:hover:bg-transparent"
+                  className="rounded-xl border border-black bg-white px-4 py-2 text-sm font-bold text-black transition hover:bg-neutral-50 disabled:cursor-not-allowed disabled:border-neutral-200 disabled:text-neutral-400 disabled:hover:bg-white"
                   disabled={visibleBusinesses.length === 0}
                   onClick={handleExportCsv}
                   type="button"
@@ -546,7 +554,7 @@ export default function Home() {
           ) : null}
 
           {error ? (
-            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-800">
+            <div className="rounded-2xl border border-neutral-300 bg-neutral-50 p-4 text-sm font-semibold text-black">
               {error}
             </div>
           ) : null}
@@ -556,37 +564,37 @@ export default function Home() {
               {[1, 2, 3].map((n) => (
                 <div
                   key={n}
-                  className="animate-pulse rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+                  className="animate-pulse rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm"
                 >
-                  <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 pb-4">
-                    <div className="h-5 w-44 rounded-md bg-slate-200" />
-                    <div className="h-5 w-16 rounded-full bg-slate-200" />
+                  <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 pb-4">
+                    <div className="h-5 w-44 rounded-md bg-neutral-200" />
+                    <div className="h-5 w-16 rounded-full bg-neutral-200" />
                   </div>
                   <div className="mt-4 grid gap-3 sm:grid-cols-2">
                     <div className="space-y-1.5">
-                      <div className="h-3 w-12 rounded bg-slate-200" />
-                      <div className="h-4 w-40 rounded bg-slate-200" />
+                      <div className="h-3 w-12 rounded bg-neutral-200" />
+                      <div className="h-4 w-40 rounded bg-neutral-200" />
                     </div>
                     <div className="space-y-1.5">
-                      <div className="h-3 w-12 rounded bg-slate-200" />
-                      <div className="h-4 w-28 rounded bg-slate-200" />
+                      <div className="h-3 w-12 rounded bg-neutral-200" />
+                      <div className="h-4 w-28 rounded bg-neutral-200" />
                     </div>
                     <div className="space-y-1.5">
-                      <div className="h-3 w-12 rounded bg-slate-200" />
-                      <div className="h-4 w-20 rounded bg-slate-200" />
+                      <div className="h-3 w-12 rounded bg-neutral-200" />
+                      <div className="h-4 w-20 rounded bg-neutral-200" />
                     </div>
                   </div>
-                  <div className="mt-5 h-8 w-28 rounded-lg bg-slate-200" />
+                  <div className="mt-5 h-8 w-28 rounded-lg bg-neutral-200" />
                 </div>
               ))}
             </div>
           ) : null}
 
           {!error && !isLoading && !hasSearched ? (
-            <div className="flex min-h-56 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white p-6 text-center">
+            <div className="flex min-h-56 items-center justify-center rounded-2xl border border-dashed border-neutral-200 bg-white p-6 text-center">
               <div>
-                <p className="font-medium text-slate-700">Ready to search</p>
-                <p className="mt-1 text-sm text-slate-400">
+                <p className="font-bold text-black">Ready to search</p>
+                <p className="mt-1 text-sm text-neutral-500">
                   Enter an address and choose a category above to find nearby
                   businesses.
                 </p>
@@ -595,10 +603,10 @@ export default function Home() {
           ) : null}
 
           {!error && !isLoading && hasSearched && dedupedBusinesses.length === 0 ? (
-            <div className="flex min-h-56 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white p-6 text-center">
+            <div className="flex min-h-56 items-center justify-center rounded-2xl border border-dashed border-neutral-200 bg-white p-6 text-center">
               <div>
-                <p className="font-medium text-slate-700">No results found</p>
-                <p className="mt-1 text-sm text-slate-400">
+                <p className="font-bold text-black">No results found</p>
+                <p className="mt-1 text-sm text-neutral-500">
                   Try a different address or switch to another category.
                 </p>
               </div>
@@ -609,11 +617,11 @@ export default function Home() {
           !isLoading &&
           dedupedBusinesses.length > 0 &&
           visibleBusinesses.length === 0 ? (
-            <div className="flex min-h-56 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white p-6 text-center">
+            <div className="flex min-h-56 items-center justify-center rounded-2xl border border-dashed border-neutral-200 bg-white p-6 text-center">
               <div>
-                <p className="font-medium text-slate-700">All results are hidden</p>
-                <p className="mt-1 text-sm text-slate-400">
-                  Uncheck "Hide likely chains" above to see them.
+                <p className="font-bold text-black">All results are hidden</p>
+                <p className="mt-1 text-sm text-neutral-500">
+                  Uncheck &quot;Hide likely chains&quot; above to see them.
                 </p>
               </div>
             </div>
@@ -630,20 +638,20 @@ export default function Home() {
 
             return (
               <article
-                className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+                className="rounded-2xl border border-neutral-200 bg-white p-5 shadow-sm"
                 key={`${business.name}-${business.latitude}-${business.longitude}`}
               >
-                <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 pb-4">
-                  <h2 className="text-lg font-semibold text-slate-950">
+                <div className="flex flex-wrap items-center gap-2 border-b border-neutral-100 pb-4">
+                  <h2 className="text-lg font-bold text-black">
                     {business.name}
                   </h2>
                   <span
-                    className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${getSourceBadgeClass(resultSource)}`}
+                    className={`rounded-full border px-2.5 py-0.5 text-xs font-semibold ${getSourceBadgeClass(resultSource)}`}
                   >
                     {resultSource}
                   </span>
                   {business.likely_chain ? (
-                    <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+                    <span className="rounded-full border border-neutral-300 bg-white px-2.5 py-0.5 text-xs font-bold text-black">
                       Likely chain
                     </span>
                   ) : null}
@@ -651,20 +659,20 @@ export default function Home() {
 
                 <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
                   <div>
-                    <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                    <dt className="text-xs font-bold uppercase tracking-wide text-neutral-500">
                       Address
                     </dt>
-                    <dd className="mt-1 text-slate-800">
+                    <dd className="mt-1 text-neutral-800">
                       {business.address || "Address unavailable"}
                     </dd>
                   </div>
 
                   {business.phone ? (
                     <div>
-                      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      <dt className="text-xs font-bold uppercase tracking-wide text-neutral-500">
                         Phone
                       </dt>
-                      <dd className="mt-1 text-slate-800">{business.phone}</dd>
+                      <dd className="mt-1 text-neutral-800">{business.phone}</dd>
                     </div>
                   ) : null}
 
@@ -672,10 +680,10 @@ export default function Home() {
                     business.rating !== undefined) ||
                   (reviewCount !== null && reviewCount !== undefined) ? (
                     <div>
-                      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      <dt className="text-xs font-bold uppercase tracking-wide text-neutral-500">
                         Rating
                       </dt>
-                      <dd className="mt-1 text-slate-800">
+                      <dd className="mt-1 text-neutral-800">
                         {business.rating !== null &&
                         business.rating !== undefined
                           ? `${business.rating} ★`
@@ -695,17 +703,17 @@ export default function Home() {
 
                   {distanceText ? (
                     <div>
-                      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      <dt className="text-xs font-bold uppercase tracking-wide text-neutral-500">
                         Distance
                       </dt>
-                      <dd className="mt-1 text-slate-800">{distanceText}</dd>
+                      <dd className="mt-1 text-neutral-800">{distanceText}</dd>
                     </div>
                   ) : null}
                 </dl>
 
                 {resultLink ? (
                   <a
-                    className="mt-4 inline-flex rounded-lg border border-teal-700 px-4 py-1.5 text-sm font-semibold text-teal-700 transition hover:bg-teal-50"
+                    className="mt-4 inline-flex rounded-xl border border-black bg-white px-4 py-2 text-sm font-bold text-black transition hover:bg-neutral-50"
                     href={resultLink}
                     rel="noopener noreferrer"
                     target="_blank"
@@ -858,12 +866,12 @@ function formatDistance(distanceMeters) {
 
 function getSourceBadgeClass(source) {
   if (source === "Yelp") {
-    return "bg-rose-100 text-rose-700";
+    return "border-neutral-200 bg-neutral-100 text-neutral-700";
   }
   if (source === "Google Places") {
-    return "bg-blue-100 text-blue-700";
+    return "border-neutral-200 bg-white text-neutral-700";
   }
-  return "bg-slate-100 text-slate-600";
+  return "border-neutral-200 bg-neutral-50 text-neutral-600";
 }
 
 function getResultLinkLabel(source) {
