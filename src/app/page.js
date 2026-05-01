@@ -57,8 +57,6 @@ export default function Home() {
   const likelyChainsFoundCount = dedupedBusinesses.filter(
     (business) => business.likely_chain,
   ).length;
-  const hiddenLikelyChainsCount =
-    dedupedBusinesses.length - visibleBusinesses.length;
   const yelpResultsCount = dedupedBusinesses.filter(
     (business) => business.source === "Yelp",
   ).length;
@@ -127,9 +125,12 @@ export default function Home() {
     };
   }, [address, selectedAddress]);
 
-  async function handleSearch(event) {
-    event.preventDefault();
-
+  // runSearch is the single place where the live API call happens.
+  // Both the main search form and the "load recent search" button call this
+  // function so that every search — whether new or repeated — always goes
+  // through the latest Yelp, Google Places, OpenStreetMap, chain detection,
+  // barbershop filtering, and deduplication logic.
+  async function runSearch(searchAddress, searchCategory) {
     setError("");
     setBusinesses([]);
     setResultSummary(null);
@@ -140,8 +141,8 @@ export default function Home() {
 
     // URLSearchParams safely turns form values into query-string text.
     const searchParams = new URLSearchParams({
-      address,
-      category,
+      address: searchAddress,
+      category: searchCategory,
     });
 
     try {
@@ -168,18 +169,23 @@ export default function Home() {
 
       setBusinesses(rawBusinesses);
       setResultSummary(nextResultSummary);
+      // Only address and category are saved — never the result objects.
+      // This keeps recent searches lightweight and guarantees that the next
+      // time this search is run it goes through the current pipeline.
       saveRecentSearch({
-        address: address.trim(),
-        category,
-        results: finalDedupedBusinesses,
-        sourceWarnings: data.warnings || [],
-        ...nextResultSummary,
+        address: searchAddress.trim(),
+        category: searchCategory,
       });
     } catch (searchError) {
       setError(searchError.message);
     } finally {
       setIsLoading(false);
     }
+  }
+
+  function handleSearch(event) {
+    event.preventDefault();
+    runSearch(address, category);
   }
 
   function handleAddressChange(event) {
@@ -208,10 +214,10 @@ export default function Home() {
       address: searchDetails.address,
       category: searchDetails.category,
       createdAt: new Date().toISOString(),
-      rawResultsCount: searchDetails.rawResultsCount,
-      duplicatesRemovedCount: searchDetails.duplicatesRemovedCount,
-      results: searchDetails.results,
-      sourceWarnings: searchDetails.sourceWarnings,
+      // Results are intentionally omitted. Storing result objects would mean
+      // clicking a recent search restores stale data built by older code.
+      // Saving only address and category keeps the storage small and forces
+      // every load to go through the current search pipeline.
     };
 
     setRecentSearches((currentSearches) => {
@@ -231,25 +237,22 @@ export default function Home() {
   }
 
   function loadRecentSearch(recentSearch) {
-    // Loading a recent search copies the saved results back into React state.
-    // There is no fetch call here, so Yelp, Google Places, and OpenStreetMap
-    // are not contacted.
+    // When a recent search is clicked we re-run the full search pipeline using
+    // the saved address and category rather than restoring old cached results.
+    //
+    // Why re-run instead of restore?
+    // The app's logic changes over time — chain detection learns new chains,
+    // barbershop filtering gets smarter, deduplication thresholds are tuned,
+    // and category mappings are updated. If we restored old result objects from
+    // localStorage, the user would silently see data produced by older, worse
+    // code. Re-running guarantees that every search reflects the current
+    // version of the app, with no extra steps from the user.
     setAddress(recentSearch.address);
     setSelectedAddress(recentSearch.address);
     setCategory(recentSearch.category);
-    setBusinesses(recentSearch.results);
-    setResultSummary({
-      rawResultsCount:
-        recentSearch.rawResultsCount ?? recentSearch.results.length,
-      duplicatesRemovedCount: recentSearch.duplicatesRemovedCount ?? 0,
-    });
-    setSourceWarnings(recentSearch.sourceWarnings || []);
     setAddressSuggestions([]);
     setShowAddressSuggestions(false);
-    setError("");
-    setHasSearched(true);
-    setIsLoading(false);
-    setLoadedRecentSearchId(recentSearch.id);
+    runSearch(recentSearch.address, recentSearch.category);
   }
 
   function clearRecentSearches() {
@@ -297,7 +300,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-slate-50 px-6 py-10 text-slate-950 sm:px-10">
-      <section className="mx-auto flex w-full max-w-5xl flex-col gap-10">
+      <section className="mx-auto flex w-full max-w-5xl flex-col gap-8">
         <div className="max-w-2xl">
           <p className="mb-3 text-sm font-semibold uppercase tracking-[0.2em] text-teal-700">
             Local Business Finder
@@ -305,17 +308,17 @@ export default function Home() {
           <h1 className="text-4xl font-bold leading-tight sm:text-5xl">
             Find nearby places from one simple search.
           </h1>
-          <p className="mt-5 text-lg leading-8 text-slate-600">
+          <p className="mt-4 text-lg leading-7 text-slate-500">
             Enter an address, choose a category, and search Yelp, Google
             Places, and map data for businesses within about 20 miles.
           </p>
         </div>
 
         <form
-          className="grid gap-4 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:grid-cols-[1fr_220px_auto]"
+          className="grid gap-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:grid-cols-[1fr_220px_auto]"
           onSubmit={handleSearch}
         >
-          <div className="relative flex flex-col gap-2">
+          <div className="relative flex flex-col gap-1.5">
             <label
               className="text-sm font-medium text-slate-700"
               htmlFor="address"
@@ -324,7 +327,7 @@ export default function Home() {
             </label>
             <input
               autoComplete="off"
-              className="h-12 rounded-md border border-slate-300 px-4 text-base outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-100"
+              className="h-11 rounded-lg border border-slate-300 px-4 text-sm outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-100"
               id="address"
               name="address"
               onBlur={() => {
@@ -342,15 +345,15 @@ export default function Home() {
               value={address}
             />
             {showAddressSuggestions ? (
-              <div className="absolute left-0 right-0 top-full z-20 mt-2 overflow-hidden rounded-md border border-slate-200 bg-white shadow-lg">
+              <div className="absolute left-0 right-0 top-full z-20 mt-1.5 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
                 {isLoadingSuggestions ? (
-                  <p className="px-4 py-3 text-sm text-slate-500">
-                    Looking up addresses...
+                  <p className="px-4 py-3 text-sm text-slate-400">
+                    Looking up addresses…
                   </p>
                 ) : null}
 
                 {!isLoadingSuggestions && addressSuggestions.length === 0 ? (
-                  <p className="px-4 py-3 text-sm text-slate-500">
+                  <p className="px-4 py-3 text-sm text-slate-400">
                     No address suggestions found.
                   </p>
                 ) : null}
@@ -358,7 +361,7 @@ export default function Home() {
                 {!isLoadingSuggestions &&
                   addressSuggestions.map((suggestion) => (
                     <button
-                      className="block w-full px-4 py-3 text-left text-sm text-slate-700 transition hover:bg-teal-50 hover:text-teal-900"
+                      className="block w-full px-4 py-2.5 text-left text-sm text-slate-700 transition hover:bg-teal-50 hover:text-teal-900"
                       key={suggestion.id}
                       onMouseDown={(event) => event.preventDefault()}
                       onClick={() => chooseAddressSuggestion(suggestion)}
@@ -371,10 +374,10 @@ export default function Home() {
             ) : null}
           </div>
 
-          <label className="flex flex-col gap-2">
+          <label className="flex flex-col gap-1.5">
             <span className="text-sm font-medium text-slate-700">Category</span>
             <select
-              className="h-12 rounded-md border border-slate-300 bg-white px-4 text-base outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-100"
+              className="h-11 rounded-lg border border-slate-300 bg-white px-4 text-sm outline-none transition focus:border-teal-600 focus:ring-4 focus:ring-teal-100"
               name="category"
               onChange={(event) => {
                 setCategory(event.target.value);
@@ -395,108 +398,131 @@ export default function Home() {
           </label>
 
           <button
-            className="h-12 self-end rounded-md bg-teal-700 px-6 text-base font-semibold text-white transition hover:bg-teal-800 focus:outline-none focus:ring-4 focus:ring-teal-200 disabled:cursor-not-allowed disabled:bg-slate-400"
+            className="h-11 w-full self-end rounded-lg bg-teal-700 px-6 text-sm font-semibold text-white transition hover:bg-teal-800 focus:outline-none focus:ring-4 focus:ring-teal-200 disabled:cursor-not-allowed disabled:bg-slate-300 sm:w-auto"
             disabled={isLoading}
             type="submit"
           >
-            {isLoading ? "Searching..." : "Search"}
+            {isLoading ? "Searching…" : "Search"}
           </button>
         </form>
 
         <section aria-label="Recent searches" className="space-y-3">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <h2 className="text-xl font-semibold text-slate-950">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-slate-500">
               Recent searches
             </h2>
             <button
-              className="w-fit rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-white disabled:cursor-not-allowed disabled:text-slate-400 disabled:hover:bg-transparent"
+              className="text-sm text-slate-400 transition hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-40"
               disabled={recentSearches.length === 0}
               onClick={clearRecentSearches}
               type="button"
             >
-              Clear recent searches
+              Clear all
             </button>
           </div>
 
           {recentSearches.length > 0 ? (
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-2.5 sm:grid-cols-2">
               {recentSearches.map((recentSearch) => {
                 const isLoaded = loadedRecentSearchId === recentSearch.id;
 
                 return (
                   <button
-                    className={`rounded-lg border bg-white p-4 text-left shadow-sm transition hover:border-teal-500 hover:bg-teal-50 ${
+                    className={`rounded-xl border bg-white p-4 text-left shadow-sm transition hover:border-teal-400 hover:shadow-md ${
                       isLoaded
-                        ? "border-teal-600 ring-4 ring-teal-100"
+                        ? "border-teal-500 ring-4 ring-teal-100"
                         : "border-slate-200"
                     }`}
                     key={recentSearch.id}
                     onClick={() => loadRecentSearch(recentSearch)}
                     type="button"
                   >
-                    <span className="block truncate font-semibold text-slate-950">
+                    <span className="block truncate text-sm font-semibold text-slate-800">
                       {recentSearch.address}
                     </span>
-                    <span className="mt-2 block text-sm text-teal-700">
-                      {getCategoryLabel(recentSearch.category)}
+                    <span className="mt-2 block">
+                      <span className="inline-block rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-medium text-teal-700">
+                        {getCategoryLabel(recentSearch.category)}
+                      </span>
                     </span>
-                    <span className="mt-3 block text-sm text-slate-500">
+                    <span className="mt-2 block text-xs text-slate-400">
                       {formatSavedSearchDate(recentSearch.createdAt)}
-                    </span>
-                    <span className="mt-1 block text-sm text-slate-500">
-                      {recentSearch.results.length} final results
                     </span>
                   </button>
                 );
               })}
             </div>
           ) : (
-            <div className="rounded-lg border border-dashed border-slate-300 bg-white p-5 text-sm text-slate-500">
+            <div className="rounded-xl border border-dashed border-slate-200 bg-white p-5 text-center text-sm text-slate-400">
               No recent searches yet.
             </div>
           )}
         </section>
 
-        <section aria-label="Search results" className="space-y-4">
+        <section aria-label="Search results" className="space-y-3">
           {sourceWarnings.length > 0 ? (
-            <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-              <p className="font-semibold">Source notice</p>
-              {sourceWarnings.map((warning) => (
-                <p className="mt-1" key={warning}>
-                  {warning}
-                </p>
-              ))}
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-amber-900">
+                <span aria-hidden="true">⚠</span>
+                Partial results
+              </p>
+              <ul className="mt-1.5 space-y-0.5">
+                {sourceWarnings.map((warning) => (
+                  <li className="text-sm text-amber-800" key={warning}>
+                    {warning}
+                  </li>
+                ))}
+              </ul>
             </div>
           ) : null}
 
           {dedupedBusinesses.length > 0 ? (
-            <div className="flex flex-col gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
-              <div className="text-sm text-slate-700">
-                <p className="font-semibold text-slate-950">
-                  Total raw results before dedupe: {rawResultsCount}
-                </p>
-                <p className="mt-1">
-                  Duplicates removed: {duplicatesRemovedCount}
-                </p>
-                <p>
-                  Final results shown: {visibleBusinesses.length}
-                </p>
-                <p>
-                  Yelp: {yelpResultsCount} | Google Places:{" "}
-                  {googlePlacesResultsCount} | OpenStreetMap:{" "}
-                  {openStreetMapResultsCount}
-                </p>
-                <p>
-                  Likely chains found: {likelyChainsFoundCount}
-                </p>
-                <p>
-                  Hidden chains:{" "}
-                  {hideLikelyChains ? hiddenLikelyChainsCount : 0}
-                </p>
+            <div className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm sm:flex-row sm:items-start sm:justify-between">
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-col items-center rounded-lg bg-slate-50 px-4 py-2">
+                    <span className="text-2xl font-bold leading-none text-slate-950">
+                      {visibleBusinesses.length}
+                    </span>
+                    <span className="mt-1 text-xs text-slate-500">results</span>
+                  </div>
+                  <div className="flex flex-col items-center rounded-lg bg-slate-50 px-4 py-2">
+                    <span className="text-2xl font-bold leading-none text-slate-950">
+                      {duplicatesRemovedCount}
+                    </span>
+                    <span className="mt-1 text-xs text-slate-500">duplicates removed</span>
+                  </div>
+                  {likelyChainsFoundCount > 0 ? (
+                    <div className="flex flex-col items-center rounded-lg bg-amber-50 px-4 py-2">
+                      <span className="text-2xl font-bold leading-none text-amber-700">
+                        {likelyChainsFoundCount}
+                      </span>
+                      <span className="mt-1 text-xs text-amber-600">likely chains</span>
+                    </div>
+                  ) : null}
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-xs text-slate-400">{rawResultsCount} raw ·</span>
+                  {yelpResultsCount > 0 ? (
+                    <span className="rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-medium text-rose-700">
+                      Yelp · {yelpResultsCount}
+                    </span>
+                  ) : null}
+                  {googlePlacesResultsCount > 0 ? (
+                    <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-700">
+                      Google · {googlePlacesResultsCount}
+                    </span>
+                  ) : null}
+                  {openStreetMapResultsCount > 0 ? (
+                    <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+                      OSM · {openStreetMapResultsCount}
+                    </span>
+                  ) : null}
+                </div>
               </div>
 
-              <div className="flex flex-col gap-3 sm:items-end">
-                <label className="flex w-fit items-center gap-3 text-sm font-medium text-slate-700">
+              <div className="flex flex-row items-center gap-4 sm:flex-col sm:items-end">
+                <label className="flex cursor-pointer items-center gap-2 text-sm font-medium text-slate-700">
                   <input
                     checked={hideLikelyChains}
                     className="h-4 w-4 accent-teal-700"
@@ -507,9 +533,8 @@ export default function Home() {
                   />
                   Hide likely chains
                 </label>
-
                 <button
-                  className="rounded-md border border-teal-700 px-4 py-2 text-sm font-semibold text-teal-700 transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:border-slate-300 disabled:text-slate-400 disabled:hover:bg-transparent"
+                  className="rounded-lg border border-teal-700 px-4 py-1.5 text-sm font-semibold text-teal-700 transition hover:bg-teal-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:text-slate-400 disabled:hover:bg-transparent"
                   disabled={visibleBusinesses.length === 0}
                   onClick={handleExportCsv}
                   type="button"
@@ -521,28 +546,62 @@ export default function Home() {
           ) : null}
 
           {error ? (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">
+            <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-800">
               {error}
             </div>
           ) : null}
 
-          {!error && !isLoading && !hasSearched && businesses.length === 0 ? (
-            <div className="flex min-h-52 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white p-6 text-center">
-              <p className="max-w-md text-slate-500">
-                Results will appear here after you search.
-              </p>
+          {isLoading ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((n) => (
+                <div
+                  key={n}
+                  className="animate-pulse rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
+                >
+                  <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 pb-4">
+                    <div className="h-5 w-44 rounded-md bg-slate-200" />
+                    <div className="h-5 w-16 rounded-full bg-slate-200" />
+                  </div>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <div className="h-3 w-12 rounded bg-slate-200" />
+                      <div className="h-4 w-40 rounded bg-slate-200" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <div className="h-3 w-12 rounded bg-slate-200" />
+                      <div className="h-4 w-28 rounded bg-slate-200" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <div className="h-3 w-12 rounded bg-slate-200" />
+                      <div className="h-4 w-20 rounded bg-slate-200" />
+                    </div>
+                  </div>
+                  <div className="mt-5 h-8 w-28 rounded-lg bg-slate-200" />
+                </div>
+              ))}
             </div>
           ) : null}
 
-          {!error &&
-          !isLoading &&
-          hasSearched &&
-          dedupedBusinesses.length === 0 ? (
-            <div className="flex min-h-52 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white p-6 text-center">
-              <p className="max-w-md text-slate-500">
-                No businesses found for this search. Try a nearby address or a
-                different category.
-              </p>
+          {!error && !isLoading && !hasSearched ? (
+            <div className="flex min-h-56 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white p-6 text-center">
+              <div>
+                <p className="font-medium text-slate-700">Ready to search</p>
+                <p className="mt-1 text-sm text-slate-400">
+                  Enter an address and choose a category above to find nearby
+                  businesses.
+                </p>
+              </div>
+            </div>
+          ) : null}
+
+          {!error && !isLoading && hasSearched && dedupedBusinesses.length === 0 ? (
+            <div className="flex min-h-56 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white p-6 text-center">
+              <div>
+                <p className="font-medium text-slate-700">No results found</p>
+                <p className="mt-1 text-sm text-slate-400">
+                  Try a different address or switch to another category.
+                </p>
+              </div>
             </div>
           ) : null}
 
@@ -550,11 +609,13 @@ export default function Home() {
           !isLoading &&
           dedupedBusinesses.length > 0 &&
           visibleBusinesses.length === 0 ? (
-            <div className="flex min-h-52 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white p-6 text-center">
-              <p className="max-w-md text-slate-500">
-                All current results are hidden because they are marked as likely
-                chains.
-              </p>
+            <div className="flex min-h-56 items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white p-6 text-center">
+              <div>
+                <p className="font-medium text-slate-700">All results are hidden</p>
+                <p className="mt-1 text-sm text-slate-400">
+                  Uncheck "Hide likely chains" above to see them.
+                </p>
+              </div>
             </div>
           ) : null}
 
@@ -565,37 +626,33 @@ export default function Home() {
             const distanceText = formatDistance(
               business.distanceMeters ?? business.distance,
             );
+            const reviewCount = business.reviewCount ?? business.review_count;
 
             return (
               <article
-                className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
+                className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
                 key={`${business.name}-${business.latitude}-${business.longitude}`}
               >
-                <div className="flex flex-col gap-3 border-b border-slate-100 pb-4">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <h2 className="text-xl font-semibold text-slate-950">
-                      {business.name}
-                    </h2>
-                    {business.likely_chain ? (
-                      <span className="rounded-md bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800">
-                        Likely chain
-                      </span>
-                    ) : null}
-                  </div>
-                  <p className="text-sm font-medium text-teal-700">
-                    {business.category}
-                  </p>
+                <div className="flex flex-wrap items-center gap-2 border-b border-slate-100 pb-4">
+                  <h2 className="text-lg font-semibold text-slate-950">
+                    {business.name}
+                  </h2>
+                  <span
+                    className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${getSourceBadgeClass(resultSource)}`}
+                  >
+                    {resultSource}
+                  </span>
+                  {business.likely_chain ? (
+                    <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-800">
+                      Likely chain
+                    </span>
+                  ) : null}
                 </div>
 
                 <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
                   <div>
-                    <dt className="font-semibold text-slate-500">Source</dt>
-                    <dd className="mt-1 text-slate-800">{resultSource}</dd>
-                  </div>
-
-                  <div>
-                    <dt className="font-semibold text-slate-500">
-                      Full address
+                    <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      Address
                     </dt>
                     <dd className="mt-1 text-slate-800">
                       {business.address || "Address unavailable"}
@@ -604,34 +661,41 @@ export default function Home() {
 
                   {business.phone ? (
                     <div>
-                      <dt className="font-semibold text-slate-500">Phone</dt>
+                      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        Phone
+                      </dt>
                       <dd className="mt-1 text-slate-800">{business.phone}</dd>
                     </div>
                   ) : null}
 
-                  {business.rating !== null &&
-                  business.rating !== undefined ? (
+                  {(business.rating !== null &&
+                    business.rating !== undefined) ||
+                  (reviewCount !== null && reviewCount !== undefined) ? (
                     <div>
-                      <dt className="font-semibold text-slate-500">Rating</dt>
+                      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        Rating
+                      </dt>
                       <dd className="mt-1 text-slate-800">
-                        {business.rating} stars
-                      </dd>
-                    </div>
-                  ) : null}
-
-                  {business.reviewCount !== null &&
-                  business.reviewCount !== undefined ? (
-                    <div>
-                      <dt className="font-semibold text-slate-500">Reviews</dt>
-                      <dd className="mt-1 text-slate-800">
-                        {business.reviewCount}
+                        {business.rating !== null &&
+                        business.rating !== undefined
+                          ? `${business.rating} ★`
+                          : ""}
+                        {business.rating !== null &&
+                        business.rating !== undefined &&
+                        reviewCount !== null &&
+                        reviewCount !== undefined
+                          ? " · "
+                          : ""}
+                        {reviewCount !== null && reviewCount !== undefined
+                          ? `${reviewCount} reviews`
+                          : ""}
                       </dd>
                     </div>
                   ) : null}
 
                   {distanceText ? (
                     <div>
-                      <dt className="font-semibold text-slate-500">
+                      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                         Distance
                       </dt>
                       <dd className="mt-1 text-slate-800">{distanceText}</dd>
@@ -641,7 +705,7 @@ export default function Home() {
 
                 {resultLink ? (
                   <a
-                    className="mt-5 inline-flex rounded-md border border-teal-700 px-4 py-2 text-sm font-semibold text-teal-700 transition hover:bg-teal-50"
+                    className="mt-4 inline-flex rounded-lg border border-teal-700 px-4 py-1.5 text-sm font-semibold text-teal-700 transition hover:bg-teal-50"
                     href={resultLink}
                     rel="noopener noreferrer"
                     target="_blank"
@@ -682,12 +746,6 @@ function loadRecentSearchesFromStorage() {
 
     return savedSearches
       .filter(isUsableRecentSearch)
-      .map((savedSearch) => ({
-        ...savedSearch,
-        sourceWarnings: Array.isArray(savedSearch.sourceWarnings)
-          ? savedSearch.sourceWarnings
-          : [],
-      }))
       .slice(0, MAX_RECENT_SEARCHES);
   } catch {
     // If the browser has broken saved data for any reason, starting with an
@@ -727,13 +785,16 @@ function clearRecentSearchesFromStorage() {
 }
 
 function isUsableRecentSearch(savedSearch) {
+  // We only require id, address, category, and createdAt — the fields needed
+  // to display a card and re-run the search. We no longer require a "results"
+  // field. Old entries saved by a previous version of this app do have a
+  // results field, but we ignore it and always re-run instead of restoring it.
   return (
     savedSearch &&
     typeof savedSearch.id === "string" &&
     typeof savedSearch.address === "string" &&
     typeof savedSearch.category === "string" &&
-    typeof savedSearch.createdAt === "string" &&
-    Array.isArray(savedSearch.results)
+    typeof savedSearch.createdAt === "string"
   );
 }
 
@@ -793,6 +854,16 @@ function formatDistance(distanceMeters) {
   }
 
   return `${distanceMiles.toFixed(1)} miles away`;
+}
+
+function getSourceBadgeClass(source) {
+  if (source === "Yelp") {
+    return "bg-rose-100 text-rose-700";
+  }
+  if (source === "Google Places") {
+    return "bg-blue-100 text-blue-700";
+  }
+  return "bg-slate-100 text-slate-600";
 }
 
 function getResultLinkLabel(source) {
